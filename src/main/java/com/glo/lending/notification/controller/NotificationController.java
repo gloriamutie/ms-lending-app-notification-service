@@ -1,8 +1,8 @@
 package com.glo.lending.notification.controller;
 
-import com.glo.lending.notification.repository.entities.Notification;
-import com.glo.lending.notification.repository.entities.NotificationTemplate;
-import com.glo.lending.notification.repository.repo.NotificationTemplateRepository;
+import com.glo.lending.notification.dblayer.entities.Notification;
+import com.glo.lending.notification.dblayer.entities.NotificationTemplate;
+import com.glo.lending.notification.dblayer.repo.NotificationTemplateRepository;
 import com.glo.lending.notification.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

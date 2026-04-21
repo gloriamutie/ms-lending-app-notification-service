@@ -79,6 +79,9 @@ Kafka Event ──▶ NotificationEventConsumer
             Render Template (substitute {{variables}})
                     │
                     ▼
+            Send customized notofication via channel API (EMAIL/SMS/PUSH)
+                    │
+                    ▼
             Save Notification + Dispatch (EMAIL/SMS/PUSH)
 ```
 
@@ -129,17 +132,17 @@ src/main/java/com/glo/lending/notification/
 │   └── NotificationEventConsumer.java     # Kafka consumer for loan + customer events
 ├── config/
 │   ├── KafkaConsumerConfig.java           # Concurrency=3, CooperativeSticky
-│   ├── R2dbcConfig.java
 │   └── SecurityConfig.java
 ├── controller/
 │   └── NotificationController.java
 ├── model/
 │   ├── dto/                               # NotificationEvent, NotificationResponse, TemplateRequest
 │   └── enums/                             # NotificationChannel, NotificationEventType, NotificationStatus
-├── repository/
+├── dblayer/
 │   ├── entities/                          # Notification, NotificationTemplate, NotificationRule, CustomerNotificationPreference
 │   └── repo/                              # Reactive repositories
 └── service/
+│   ├── dipatcher/              # Load + render templates
     └── NotificationService.java           # Rule resolution, template rendering, dispatch
 ```
 

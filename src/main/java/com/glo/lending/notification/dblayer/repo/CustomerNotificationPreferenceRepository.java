@@ -1,6 +1,6 @@
-package com.glo.lending.notification.repository.repo;
+package com.glo.lending.notification.dblayer.repo;
 
-import com.glo.lending.notification.repository.entities.CustomerNotificationPreference;
+import com.glo.lending.notification.dblayer.entities.CustomerNotificationPreference;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;

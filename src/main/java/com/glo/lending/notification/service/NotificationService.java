@@ -1,15 +1,13 @@
 package com.glo.lending.notification.service;
 
 import com.glo.lending.notification.model.enums.NotificationChannel;
-import com.glo.lending.notification.model.enums.NotificationChannel;
 import com.glo.lending.notification.model.enums.NotificationEventType;
 import com.glo.lending.notification.model.enums.NotificationStatus;
-import com.glo.lending.notification.repository.entities.Notification;
-import com.glo.lending.notification.repository.entities.NotificationTemplate;
-import com.glo.lending.notification.repository.repo.CustomerNotificationPreferenceRepository;
-import com.glo.lending.notification.repository.repo.NotificationRepository;
-import com.glo.lending.notification.repository.repo.NotificationRuleRepository;
-import com.glo.lending.notification.repository.repo.NotificationTemplateRepository;
+import com.glo.lending.notification.dblayer.entities.Notification;
+import com.glo.lending.notification.dblayer.repo.CustomerNotificationPreferenceRepository;
+import com.glo.lending.notification.dblayer.repo.NotificationRepository;
+import com.glo.lending.notification.dblayer.repo.NotificationRuleRepository;
+import com.glo.lending.notification.dblayer.repo.NotificationTemplateRepository;
 import com.glo.lending.notification.service.dispatcher.NotificationDispatcher;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

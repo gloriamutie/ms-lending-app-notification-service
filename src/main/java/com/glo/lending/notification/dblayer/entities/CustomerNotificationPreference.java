@@ -1,4 +1,4 @@
-package com.glo.lending.notification.repository.entities;
+package com.glo.lending.notification.dblayer.entities;
 
 import com.glo.lending.notification.model.enums.NotificationChannel;
 import lombok.Data;

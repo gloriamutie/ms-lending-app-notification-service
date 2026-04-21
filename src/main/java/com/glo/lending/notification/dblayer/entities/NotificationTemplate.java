@@ -1,4 +1,4 @@
-package com.glo.lending.notification.repository.entities;
+package com.glo.lending.notification.dblayer.entities;
 
 import com.glo.lending.notification.model.enums.NotificationChannel;
 import com.glo.lending.notification.model.enums.NotificationEventType;
@@ -10,27 +10,21 @@ import org.springframework.data.relational.core.mapping.Table;
 import java.util.UUID;
 
 @Data
-@Table("notification_rules")
-public class NotificationRule {
+@Table("notification_templates")
+public class NotificationTemplate {
 
     @Id
     private UUID id;
-
-    @Column("product_id")
-    private UUID productId;
-
-    @Column("customer_segment")
-    private String customerSegment;
-
     @Column("event_type")
     private NotificationEventType eventType;
-
     @Column("channel")
     private NotificationChannel channel;
-
+    @Column("subject_template")
+    private String subjectTemplate;
+    @Column("body_template")
+    private String bodyTemplate;
     @Column("is_active")
     private Boolean isActive;
-
 
 }
 

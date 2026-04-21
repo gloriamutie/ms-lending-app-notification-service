@@ -30,6 +30,7 @@ import java.util.Map;
  * notification deduplication and template resolution.
  * </p>
  */
+//TODO
 @Configuration
 public class KafkaConsumerConfig {
 
@@ -48,7 +49,7 @@ public class KafkaConsumerConfig {
      */
     @Bean
     public ConsumerFactory<String, Object> consumerFactory() {
-        final Map<String, Object> props = new HashMap<>();
+        Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
@@ -60,6 +61,7 @@ public class KafkaConsumerConfig {
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.glo.lending.*,java.util");
         return new DefaultKafkaConsumerFactory<>(props);
     }
+    //TODO
 
     /**
      * Kafka listener container factory with concurrency=3 for parallel partition processing.

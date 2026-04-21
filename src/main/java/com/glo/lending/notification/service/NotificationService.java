@@ -10,6 +10,7 @@ import com.glo.lending.notification.repository.repo.CustomerNotificationPreferen
 import com.glo.lending.notification.repository.repo.NotificationRepository;
 import com.glo.lending.notification.repository.repo.NotificationRuleRepository;
 import com.glo.lending.notification.repository.repo.NotificationTemplateRepository;
+import com.glo.lending.notification.service.dispatcher.NotificationDispatcher;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,6 +19,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,34 +37,41 @@ public class NotificationService {
     private final NotificationTemplateRepository templateRepository;
     private final NotificationRuleRepository ruleRepository;
     private final CustomerNotificationPreferenceRepository preferenceRepository;
+    private final List<NotificationDispatcher> dispatchers;
 
-    /**
-     * Processes a notification event: resolves rules, checks preferences, renders template, saves notification.
-     *
-     * @param eventType  the event type
-     * @param customerId the target customer
-     * @param loanId     associated loan (nullable)
-     * @param variables  template variables for substitution
-     * @return a {@link Flux} of saved notification records
-     */
+
     public Flux<Notification> processEvent( String eventType,  UUID customerId,  UUID loanId, Map<String, String> variables) {
         log.info("Processing notification event: type={}, customerId={}", eventType, customerId);
 
         return ruleRepository.findByEventTypeAndIsActive(eventType, true)
-                .flatMap(rule -> {
-                     NotificationChannel channel = rule.getChannel();
+                .flatMap(notificationRule ->  {
+                     NotificationChannel channel = notificationRule.getChannel();
                      return preferenceRepository.findByCustomerIdAndIsEnabled(customerId, true)
                             .filter(pref -> pref.getChannel() == channel)
                             .next()
                             .flatMap(pref -> templateRepository.findByEventTypeAndChannelAndIsActive(eventType, channel.name(), true)
                                     .flatMap(template -> {
-                                        final String subject = substituteVariables(template.getSubjectTemplate(), variables);
-                                        final String body = substituteVariables(template.getBodyTemplate(), variables);
-                                        return saveNotification(customerId, loanId, eventType, channel, subject, body);
+                                         String subject = substituteVariables(template.getSubjectTemplate(), variables);
+                                         String body = substituteVariables(template.getBodyTemplate(), variables);
+
+                                        String recipient = resolveRecipient(channel, variables);
+
+                                        return Flux.fromIterable(dispatchers)
+                                                .flatMap(dispatcher -> dispatcher.dispatch(channel, recipient, subject, body))
+                                                .then(saveNotification(customerId, loanId, eventType, channel, subject, body));
+
                                     })
                             );
                 })
                 .doOnComplete(() -> log.info("Notification processing complete for event: {}, customer: {}", eventType, customerId));
+    }
+
+    private String resolveRecipient(NotificationChannel channel, Map<String, String> variables) {
+        return switch (channel) {
+            case EMAIL -> variables.get("customerEmail");
+            case SMS -> variables.get("customerPhone");
+            default -> throw new IllegalArgumentException("Unsupported channel: " + channel);
+        };
     }
 
     /**
@@ -98,9 +107,9 @@ public class NotificationService {
                 .doOnSuccess(n -> log.info("Notification saved: id={}, channel={}", n.getId(), channel));
     }
 
-    private String substituteVariables(final String template, final Map<String, String> variables) {
+    private String substituteVariables( String template,  Map<String, String> variables) {
         String result = template;
-        for (final Map.Entry<String, String> entry : variables.entrySet()) {
+        for ( Map.Entry<String, String> entry : variables.entrySet()) {
             result = result.replace("{{" + entry.getKey() + "}}", entry.getValue());
         }
         return result;

@@ -68,8 +68,19 @@ public class NotificationService {
         return switch (channel) {
             case EMAIL -> variables.get("customerEmail");
             case SMS -> variables.get("customerPhone");
+            case PUSH -> firstNonBlank(variables, "customerPushToken", "pushToken", "deviceToken");
             default -> throw new IllegalArgumentException("Unsupported channel: " + channel);
         };
+    }
+
+    private String firstNonBlank(final Map<String, String> variables, final String... keys) {
+        for (final String key : keys) {
+            final String value = variables.get(key);
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     /**

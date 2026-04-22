@@ -4,39 +4,21 @@ Event-driven notification service that consumes Kafka events from Loan and Custo
 
 ## Tech Stack
 
-| Component        | Technology                              |
-|------------------|-----------------------------------------|
-| Framework        | Spring Boot 3.4.4 / Spring WebFlux      |
-| Language         | Java 21                                 |
-| Database         | PostgreSQL (R2DBC — reactive)           |
-| Migrations       | Flyway (runs over JDBC at startup)      |
-| Event Broker     | Apache Kafka (consumes `lending.loan.events`, `lending.customer.events`) |
-| Security         | API Key (`X-API-KEY` header)            |
-| Testing          | JUnit 5 + Mockito + StepVerifier        |
+| Component        | Technology                                                               |
+|------------------|--------------------------------------------------------------------------|
+| Framework        | Spring Boot 3.4.8 / Spring WebFlux                                       |
+| Language         | Java 21                                                                  |
+| Database         | PostgreSQL (R2DBC — reactive)                                            |
+| Migrations       | Flyway (runs over JDBC at startup)                                       |
+| Event Broker     | Apache Kafka (consumes `lendingLoanEventsv2`, `lendingCustomerEventsv2`) |
+| Security         | API Key (`X-API-KEY` header)                                             |
+| Testing          | JUnit 5 + Mockito + StepVerifier                                         |
 
 ## Prerequisites
 
 - Java 21+
 - Maven 3.9+
-- Docker + Docker Compose (recommended for local stack)
 - Loan Service and Customer Service publishing events
-
-## Run With Docker Compose (Single Broker + Consumer)
-
-Use one compose stack to run exactly one PostgreSQL instance, one Kafka broker, and one notification-service consumer.
-
-```bash
-cd ms-lending-app-notification-service
-
-# Build and start all services
-docker compose up -d --build
-
-# View service logs
-docker compose logs -f notification-service
-
-# Stop all services
-docker compose down
-```
 
 Notes:
 - Kafka is exposed on `localhost:9092` for other local producers.
@@ -69,6 +51,8 @@ The service starts on **port 8084** and Flyway auto-creates all tables on first 
 | `app.security.api-key`               | `notification-service-api-key-2024`                        |
 | `spring.kafka.bootstrap-servers`      | `localhost:9092`                                           |
 | `spring.kafka.consumer.group-id`      | `notification-service-group`                               |
+| `app.kafka.topic.loan-events`         | `lendingLoanEventsv2`                                      |
+| `app.kafka.topic.customer-events`     | `lendingCustomerEventsv2`                                  |
 
 ## Database Schema
 
@@ -79,7 +63,7 @@ Flyway migration `V1__init_schema.sql` creates:
 - **notification_rules** — configurable rules per product/segment/event (which channels to send)
 - **customer_notification_preferences** — per-customer channel opt-in/out
 
-`V2__seed_data.sql` inserts templates for all event types (EMAIL + SMS) and default notification rules.
+`V2__seed_data.sql` inserts templates for configured event types/channels and default notification rules.
 
 ## Notification Pipeline
 
@@ -99,18 +83,27 @@ Kafka Event ──▶ NotificationEventConsumer
             Render Template (substitute {{variables}})
                     │
                     ▼
-            Send customized notofication via channel API (EMAIL/SMS/PUSH)
+            Send customized notification via channel API (EMAIL/SMS/PUSH)
                     │
                     ▼
             Save Notification + Dispatch (EMAIL/SMS/PUSH)
 ```
 
+## Event Payload Contract
+
+Consumer-side validation expects IDs to be valid UUID strings.
+
+- `customerId` is required and must be a UUID
+- `loanId` is optional, but if present it must be a UUID
+
+If invalid values are sent (for example `customer-2493`), the consumer logs a warning and skips processing the event.
+
 ## Kafka Events Consumed
 
 | Topic                     | Event Types                                                                  |
 |---------------------------|------------------------------------------------------------------------------|
-| `lending.loan.events`     | LOAN_CREATED, REPAYMENT_RECEIVED, LOAN_CLOSED, LOAN_CANCELLED, OVERDUE_NOTICE |
-| `lending.customer.events` | LIMIT_UPDATED                                                                |
+| `lendingLoanEventsv2`     | LOAN_CREATED, REPAYMENT_RECEIVED, LOAN_CLOSED, LOAN_CANCELLED, OVERDUE_NOTICE |
+| `lendingCustomerEventsv2` | LIMIT_UPDATED                                                                |
 
 Consumer config: `concurrency=3`, `CooperativeStickyAssignor`, `MANUAL_IMMEDIATE` ack mode.
 
@@ -135,6 +128,7 @@ Templates use `{{variable}}` syntax. Available variables from events:
 | `{{dueDate}}`      | Payment due date          |
 | `{{productName}}`  | Loan product name         |
 | `{{loanId}}`       | Loan identifier           |
+| `{{customerPushToken}}` | Push destination token |
 
 ## Example — Query Customer Notifications
 
@@ -162,7 +156,7 @@ src/main/java/com/glo/lending/notification/
 │   ├── entities/                          # Notification, NotificationTemplate, NotificationRule, CustomerNotificationPreference
 │   └── repo/                              # Reactive repositories
 └── service/
-│   ├── dipatcher/              # Load + render templates
+    ├── dispatcher/                        # Channel dispatchers (Email/SMS/Push)
     └── NotificationService.java           # Rule resolution, template rendering, dispatch
 ```
 

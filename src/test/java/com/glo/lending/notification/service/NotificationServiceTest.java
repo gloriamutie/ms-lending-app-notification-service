@@ -28,6 +28,8 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -167,6 +169,51 @@ class NotificationServiceTest {
                     .verifyComplete();
 
             verify(notificationRepository, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("should process push notification when push token is provided")
+        void processEvent_PushChannelAndPushToken_DispatchesAndSavesNotification() {
+            // Given
+            final NotificationRule rule = new NotificationRule();
+            rule.setId(UUID.randomUUID());
+            rule.setEventType(NotificationEventType.LOAN_CREATED);
+            rule.setChannel(NotificationChannel.PUSH);
+            rule.setIsActive(true);
+
+            final CustomerNotificationPreference pref = new CustomerNotificationPreference();
+            pref.setCustomerId(customerId);
+            pref.setChannel(NotificationChannel.PUSH);
+            pref.setIsEnabled(true);
+
+            final NotificationTemplate template = new NotificationTemplate();
+            template.setId(UUID.randomUUID());
+            template.setEventType(NotificationEventType.LOAN_CREATED);
+            template.setChannel(NotificationChannel.PUSH);
+            template.setSubjectTemplate("Loan update");
+            template.setBodyTemplate("Loan status changed");
+
+            final Notification savedNotification = new Notification();
+            savedNotification.setId(UUID.randomUUID());
+            savedNotification.setCustomerId(customerId);
+            savedNotification.setStatus(NotificationStatus.SENT);
+
+            when(ruleRepository.findByEventTypeAndIsActive("LOAN_CREATED", true)).thenReturn(Flux.just(rule));
+            when(preferenceRepository.findByCustomerIdAndIsEnabled(customerId, true)).thenReturn(Flux.just(pref));
+            when(templateRepository.findByEventTypeAndChannelAndIsActive("LOAN_CREATED", "PUSH", true))
+                    .thenReturn(Mono.just(template));
+            when(dispatcher.dispatch(any(), any(), any(), any())).thenReturn(Mono.empty());
+            when(notificationRepository.save(any(Notification.class))).thenReturn(Mono.just(savedNotification));
+
+            final Map<String, String> variables = Map.of("customerPushToken", "push-token-123");
+
+            // When & Then
+            StepVerifier.create(notificationService.processEvent("LOAN_CREATED", customerId, loanId, variables))
+                    .assertNext(n -> assertEquals(NotificationStatus.SENT, n.getStatus()))
+                    .verifyComplete();
+
+            verify(dispatcher).dispatch(eq(NotificationChannel.PUSH), eq("push-token-123"), anyString(), anyString());
+            verify(notificationRepository).save(any(Notification.class));
         }
     }
 

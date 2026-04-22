@@ -18,10 +18,30 @@ Event-driven notification service that consumes Kafka events from Loan and Custo
 
 - Java 21+
 - Maven 3.9+
-- PostgreSQL 15+
-- Apache Kafka 3.x+
+- Docker + Docker Compose (recommended for local stack)
 - Loan Service and Customer Service publishing events
-- Create database: `CREATE DATABASE lending_notification_db;`
+
+## Run With Docker Compose (Single Broker + Consumer)
+
+Use one compose stack to run exactly one PostgreSQL instance, one Kafka broker, and one notification-service consumer.
+
+```bash
+cd ms-lending-app-notification-service
+
+# Build and start all services
+docker compose up -d --build
+
+# View service logs
+docker compose logs -f notification-service
+
+# Stop all services
+docker compose down
+```
+
+Notes:
+- Kafka is exposed on `localhost:9092` for other local producers.
+- Notification service runs on `localhost:8084`.
+- PostgreSQL runs on `localhost:5432` (database: `lending_notification_db`).
 
 ## Getting Started
 

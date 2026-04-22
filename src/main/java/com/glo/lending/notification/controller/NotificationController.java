@@ -27,13 +27,13 @@ public class NotificationController {
     private final NotificationTemplateRepository templateRepository;
 
     @GetMapping("/customer/{customerId}")
-    public Mono<ResponseEntity<Flux<Notification>>> getByCustomer(@PathVariable final UUID customerId) {
+    public Mono<ResponseEntity<Flux<Notification>>> getByCustomerId(@PathVariable  UUID customerId) {
         log.info("GET /api/v1/notifications/customer/{}", customerId);
         return Mono.just(ResponseEntity.ok(notificationService.getNotificationsByCustomerId(customerId)));
     }
 
     @GetMapping("/loan/{loanId}")
-    public Mono<ResponseEntity<Flux<Notification>>> getByLoan(@PathVariable final UUID loanId) {
+    public Mono<ResponseEntity<Flux<Notification>>> getByLoan(@PathVariable  UUID loanId) {
         log.info("GET /api/v1/notifications/loan/{}", loanId);
         return Mono.just(ResponseEntity.ok(notificationService.getNotificationsByLoanId(loanId)));
     }

@@ -16,13 +16,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -38,8 +38,9 @@ class NotificationServiceTest {
     @Mock private NotificationTemplateRepository templateRepository;
     @Mock private NotificationRuleRepository ruleRepository;
     @Mock private CustomerNotificationPreferenceRepository preferenceRepository;
+    @Mock private com.glo.lending.notification.service.dispatcher.NotificationDispatcher dispatcher;
 
-    @InjectMocks private NotificationService notificationService;
+    private NotificationService notificationService;
 
     private UUID customerId;
     private UUID loanId;
@@ -48,6 +49,13 @@ class NotificationServiceTest {
     void setUp() {
         customerId = UUID.randomUUID();
         loanId = UUID.randomUUID();
+        notificationService = new NotificationService(
+                notificationRepository,
+                templateRepository,
+                ruleRepository,
+                preferenceRepository,
+                List.of(dispatcher)
+        );
     }
 
     @Nested
@@ -85,6 +93,7 @@ class NotificationServiceTest {
             when(preferenceRepository.findByCustomerIdAndIsEnabled(customerId, true)).thenReturn(Flux.just(pref));
             when(templateRepository.findByEventTypeAndChannelAndIsActive("LOAN_CREATED", "EMAIL", true))
                     .thenReturn(Mono.just(template));
+            when(dispatcher.dispatch(any(), any(), any(), any())).thenReturn(Mono.empty());
             when(notificationRepository.save(any(Notification.class))).thenReturn(Mono.just(savedNotification));
 
             final Map<String, String> variables = Map.of(

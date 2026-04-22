@@ -3,11 +3,11 @@
 -- Database: PostgreSQL
 -- =====================================================
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- Notifications
 CREATE TABLE IF NOT EXISTS notifications (
-    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id     UUID           NOT NULL,
     loan_id         UUID,
     event_type      VARCHAR(30)    NOT NULL,
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 
 -- Notification Templates
 CREATE TABLE IF NOT EXISTS notification_templates (
-    id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     event_type        VARCHAR(30)    NOT NULL,
     channel           VARCHAR(10)    NOT NULL,
     subject_template  VARCHAR(255)   NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS notification_templates (
 
 -- Notification Rules
 CREATE TABLE IF NOT EXISTS notification_rules (
-    id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     product_id        UUID,
     customer_segment  VARCHAR(50),
     event_type        VARCHAR(30)    NOT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS notification_rules (
 
 -- Customer Notification Preferences
 CREATE TABLE IF NOT EXISTS customer_notification_preferences (
-    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id     UUID           NOT NULL,
     channel         VARCHAR(10)    NOT NULL,
     is_enabled      BOOLEAN        NOT NULL DEFAULT TRUE,

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -24,37 +25,56 @@ public class NotificationEventConsumer {
     private final NotificationService notificationService;
 
 
-    @KafkaListener(topics = "lending.loan.events", groupId = "notification-service-group")
+    @KafkaListener(
+            topics = "${app.kafka.topic.loan-events}",
+            groupId = "${spring.kafka.consumer.group-id}"
+    )
     public void handleLoanEvent( Map<String, Object> event) {
         log.info("Received loan event: {}", event.get("eventType"));
         processEvent(event);
     }
 
-    @KafkaListener(topics = "lending.customer.events", groupId = "notification-service-group")
+    @KafkaListener(
+            topics = "${app.kafka.topic.customer-events}",
+            groupId = "${spring.kafka.consumer.group-id}"
+    )
     public void handleCustomerEvent( Map<String, Object> event) {
         log.info("Received customer event: {}", event.get("eventType"));
         processEvent(event);
     }
 
     private void processEvent( Map<String, Object> event) {
+        final String eventType = String.valueOf(event.get("eventType"));
+        final Optional<UUID> customerId = parseUuid(event.get("customerId"));
+        if (customerId.isEmpty()) {
+            log.warn("Skipping event {} due to invalid customerId: {}", eventType, event.get("customerId"));
+            return;
+        }
+
+        final UUID loanId = parseUuid(event.get("loanId")).orElse(null);
+
+        final Map<String, String> variables = new HashMap<>();
+        event.forEach((k, v) -> {
+            if (v != null) {
+                variables.put(k, String.valueOf(v));
+            }
+        });
+
+        notificationService.processEvent(eventType, customerId.get(), loanId, variables)
+                .subscribe(
+                        n -> log.debug("Notification dispatched: id={}", n.getId()),
+                        error -> log.error("Failed to process notification event: {}", error.getMessage())
+                );
+    }
+
+    private Optional<UUID> parseUuid(final Object rawValue) {
+        if (rawValue == null) {
+            return Optional.empty();
+        }
         try {
-             String eventType = String.valueOf(event.get("eventType"));
-             UUID customerId = UUID.fromString(String.valueOf(event.get("customerId")));
-             UUID loanId = event.containsKey("loanId") ? UUID.fromString(String.valueOf(event.get("loanId"))) : null;
-
-             Map<String, String> variables = new HashMap<>();
-            event.forEach((k, v) -> {
-                if (v != null) variables.put(k, String.valueOf(v));
-            });
-
-            // process event
-            notificationService.processEvent(eventType, customerId, loanId, variables)
-                    .subscribe(
-                            n -> log.debug("Notification dispatched: id={}", n.getId()),
-                            error -> log.error("Failed to process notification event: {}", error.getMessage())
-                    );
-        } catch ( Exception e) {
-            log.error("Error parsing notification event: {}", e.getMessage(), e);
+            return Optional.of(UUID.fromString(String.valueOf(rawValue)));
+        } catch (IllegalArgumentException ex) {
+            return Optional.empty();
         }
     }
 }

@@ -59,25 +59,28 @@ public class KafkaConsumerConfig {
         props.put(ConsumerConfig.PARTITION_ASSIGNMENT_STRATEGY_CONFIG,
                 "org.apache.kafka.clients.consumer.CooperativeStickyAssignor");
         props.put(JsonDeserializer.TRUSTED_PACKAGES, "com.glo.lending.*,java.util");
+        // Events are consumed as generic maps, not typed DTO payloads.
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "java.util.HashMap");
+        props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false);
         return new DefaultKafkaConsumerFactory<>(props);
     }
     //TODO
 
     /**
      * Kafka listener container factory with concurrency=3 for parallel partition processing.
-     * Uses MANUAL_IMMEDIATE ack mode to ensure at-least-once delivery.
+     * Uses RECORD ack mode to commit each processed record.
      *
      * @return a {@link ConcurrentKafkaListenerContainerFactory} for notification consumers
      */
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, Object> kafkaListenerContainerFactory() {
-        log.info("Configuring Kafka consumer: groupId={}, concurrency=3, ackMode=MANUAL_IMMEDIATE", groupId);
+        log.info("Configuring Kafka consumer: groupId={}, concurrency=3, ackMode=RECORD", groupId);
         final ConcurrentKafkaListenerContainerFactory<String, Object> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(consumerFactory());
         // 3 concurrent consumers to handle 3 of 6 partitions per instance
         factory.setConcurrency(3);
-        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.RECORD);
         return factory;
     }
 }

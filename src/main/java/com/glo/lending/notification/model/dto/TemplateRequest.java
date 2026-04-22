@@ -4,31 +4,24 @@ import com.glo.lending.notification.model.enums.NotificationChannel;
 import com.glo.lending.notification.model.enums.NotificationEventType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 
-/**
- * Request DTO for creating or updating a notification template.
- *
- * @param eventType       the event this template handles
- * @param channel         the delivery channel
- * @param subjectTemplate subject line with {{variable}} placeholders
- * @param bodyTemplate    body content with {{variable}} placeholders
- * @param isActive        whether the template is active
- */
-public record TemplateRequest(
+
+@Data
+public class TemplateRequest{
         @NotNull(message = "Event type is required")
-        NotificationEventType eventType,
+        private NotificationEventType eventType;
 
         @NotNull(message = "Channel is required")
-        NotificationChannel channel,
+        private NotificationChannel channel;
 
         @NotBlank(message = "Subject template is required")
-        String subjectTemplate,
+        private String subjectTemplate;
 
         @NotBlank(message = "Body template is required")
-        String bodyTemplate,
+        private String bodyTemplate;
 
         @NotNull(message = "Active flag is required")
-        Boolean isActive
-) {
+        private  Boolean isActive;
 }
 
